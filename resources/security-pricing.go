@@ -41,15 +41,25 @@ type SecurityPricing struct {
 
 func (r *SecurityPricing) Filter() error {
 	if r.PricingTier == "Free" {
-		return fmt.Errorf("already set to free tier")
+		return fmt.Errorf("already set to default, free tier")
 	}
+
+	if r.PricingTier == "Standard" && ptr.ToString(r.Name) == "Discovery" {
+		return fmt.Errorf("already set to default, standard tier")
+	}
+
 	return nil
 }
 
 func (r *SecurityPricing) Remove(ctx context.Context) error {
+	var pricingTier security.PricingTier = "Free"
+	if ptr.ToString(r.Name) == "Discovery" {
+		pricingTier = "Standard"
+	}
+
 	_, err := r.client.Update(ctx, *r.Name, security.Pricing{
 		PricingProperties: &security.PricingProperties{
-			PricingTier: "Free",
+			PricingTier: pricingTier,
 		},
 	})
 	return err
