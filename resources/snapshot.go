@@ -88,7 +88,7 @@ func (l ComputeSnapshotLister) List(ctx context.Context, o interface{}) ([]resou
 				client:       client,
 				Name:         r.Name,
 				Tags:         r.Tags,
-				CreationDate: ptr.Time(r.SnapshotProperties.TimeCreated.Time),
+				CreationDate: ptr.Time(r.TimeCreated.Time),
 			})
 		}
 

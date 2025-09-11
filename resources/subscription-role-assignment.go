@@ -127,7 +127,7 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 			}
 
 			if _, ok := l.roleNameCache[t.Properties.RoleDefinitionID]; !ok {
-				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.RoleDefinition.Properties.RoleName
+				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.Properties.RoleName
 			}
 
 			var principalName = ptr.String("unknown")

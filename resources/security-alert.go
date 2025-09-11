@@ -106,7 +106,7 @@ func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resour
 				ID:          *g.ID,
 				Name:        *g.Name,
 				DisplayName: ptr.ToString(g.AlertDisplayName),
-				Status:      string(g.AlertProperties.Status),
+				Status:      string(g.Status),
 			})
 		}
 
