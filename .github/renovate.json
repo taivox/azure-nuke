@@ -1,6 +1,6 @@
 {
     "extends": [
-        "config:base"
+        "config:recommended"
     ],
     "packageRules": [
         {
@@ -14,17 +14,18 @@
             "automerge": true
         },
         {
-            "matchPackagePatterns": [
-                "^golang.*"
-            ],
             "groupName": "golang",
-            "groupSlug": "golang"
+            "groupSlug": "golang",
+            "matchPackageNames": [
+                "/^golang.*/"
+            ]
         }
     ],
-    "regexManagers": [
+    "customManagers": [
         {
-            "fileMatch": [
-                "^.github/workflows/.*"
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^.github/workflows/.*/"
             ],
             "matchStrings": [
                 "go-version: (?<currentValue>.*?)\n"
