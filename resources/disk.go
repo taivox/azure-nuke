@@ -88,7 +88,7 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 				client:       client,
 				Name:         r.Name,
 				Tags:         r.Tags,
-				CreationDate: ptr.Time(r.DiskProperties.TimeCreated.Time),
+				CreationDate: ptr.Time(r.TimeCreated.Time),
 			})
 		}
 

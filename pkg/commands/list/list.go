@@ -29,13 +29,15 @@ func execute(c *cli.Context) error {
 		} else {
 			_, _ = color.New(color.Bold).Printf("%-55s", name)
 			c := color.FgGreen
-			if reg.Scope == azure.TenantScope {
+			switch reg.Scope {
+			case azure.TenantScope:
 				c = color.FgHiGreen
-			} else if reg.Scope == azure.SubscriptionScope {
+			case azure.SubscriptionScope:
 				c = color.FgHiBlue
-			} else if reg.Scope == azure.ResourceGroupScope {
+			case azure.ResourceGroupScope:
 				c = color.FgHiMagenta
 			}
+
 			_, _ = color.New(c).Printf("%s\n", string(reg.Scope))
 		}
 	}
