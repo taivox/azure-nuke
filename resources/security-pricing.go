@@ -53,7 +53,7 @@ func (r *SecurityPricing) Filter() error {
 
 func (r *SecurityPricing) Remove(ctx context.Context) error {
 	var pricingTier security.PricingTier = "Free"
-	if ptr.ToString(r.Name) == "Discovery" {
+	if ptr.ToString(r.Name) == "Discovery" || ptr.ToString(r.Name) == "FoundationCspm" {
 		pricingTier = "Standard"
 	}
 
