@@ -44,7 +44,7 @@ func (r *SecurityPricing) Filter() error {
 		return fmt.Errorf("already set to default, free tier")
 	}
 
-	if r.PricingTier == "Standard" && ptr.ToString(r.Name) == "Discovery" {
+	if r.PricingTier == "Standard" && ptr.ToString(r.Name) == "Discovery" || ptr.ToString(r.Name) == "FoundationalCspm" {
 		return fmt.Errorf("already set to default, standard tier")
 	}
 
