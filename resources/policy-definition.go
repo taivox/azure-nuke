@@ -2,12 +2,13 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armpolicy"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -30,14 +31,14 @@ func init() {
 type PolicyDefinition struct {
 	*BaseResource `property:",inline"`
 
-	client      policy.DefinitionsClient
+	client      *armpolicy.DefinitionsClient
 	Name        *string
 	DisplayName string
 	PolicyType  string `property:"name=Type"`
 }
 
 func (r *PolicyDefinition) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.Name)
+	_, err := r.client.Delete(ctx, *r.Name, nil)
 	return err
 }
 
@@ -57,30 +58,49 @@ func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]reso
 
 	log := logrus.WithField("r", PolicyDefinitionResource).WithField("s", opts.SubscriptionID)
 
-	client := policy.NewDefinitionsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armpolicy.NewDefinitionsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds,
+		&arm.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				APIVersion: "2023-04-01",
+			},
+		})
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list policy definitions")
 
-	list, err := client.List(ctx, "", nil)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(nil)
 
-	log.Trace("listing policy definitions")
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+		log.Trace("listing policy definitions")
+
+		for _, g := range page.Value {
 			// Filtering out BuiltIn Policy Definitions, because otherwise it needlessly adds 3000+
 			// resources that have to get filtered out later. This instead does it optimistically here.
 			// Ideally we'd be able to use filter above, but it does not work. Thanks, Azure. :facepalm:
-			if g.PolicyType == "BuiltIn" || g.PolicyType == "Static" {
-				continue
+			if g.Properties != nil && g.Properties.PolicyType != nil {
+				policyType := string(*g.Properties.PolicyType)
+				if policyType == "BuiltIn" || policyType == "Static" {
+					continue
+				}
+			}
+
+			policyType := ""
+			if g.Properties != nil && g.Properties.PolicyType != nil {
+				policyType = string(*g.Properties.PolicyType)
+			}
+
+			displayName := ""
+			if g.Properties != nil && g.Properties.DisplayName != nil {
+				displayName = *g.Properties.DisplayName
 			}
 
 			resources = append(resources, &PolicyDefinition{
@@ -89,13 +109,9 @@ func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]reso
 				},
 				client:      client,
 				Name:        g.Name,
-				DisplayName: ptr.ToString(g.DisplayName),
-				PolicyType:  string(g.PolicyType),
+				DisplayName: displayName,
+				PolicyType:  policyType,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

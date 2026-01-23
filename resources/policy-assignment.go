@@ -2,12 +2,15 @@ package resources
 
 import (
 	"context"
-	"time"
+	"fmt"
+	"strings"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armpolicy"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -30,14 +33,21 @@ func init() {
 type PolicyAssignment struct {
 	*BaseResource `property:",inline"`
 
-	client          policy.AssignmentsClient
+	client          *armpolicy.AssignmentsClient
 	Name            string
 	Scope           string
 	EnforcementMode string
 }
 
+func (r *PolicyAssignment) Filter() error {
+	if strings.HasPrefix(r.Name, "sys.") {
+		return fmt.Errorf("cannot remove built-in policy")
+	}
+	return nil
+}
+
 func (r *PolicyAssignment) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.Scope, r.Name)
+	_, err := r.client.Delete(ctx, r.Scope, r.Name, nil)
 	return err
 }
 
@@ -57,38 +67,50 @@ func (l PolicyAssignmentLister) List(ctx context.Context, o interface{}) ([]reso
 
 	log := logrus.WithField("r", PolicyAssignmentResource).WithField("s", opts.SubscriptionID)
 
-	client := policy.NewAssignmentsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armpolicy.NewAssignmentsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds,
+		&arm.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				APIVersion: "2024-04-01",
+			},
+		})
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list policy assignments")
 
-	list, err := client.List(ctx, "", nil)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(nil)
 
-	log.Trace("listing policy assignments")
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+		log.Trace("listing policy assignments")
+
+		for _, g := range page.Value {
+			enforcementMode := ""
+			if g.Properties != nil && g.Properties.EnforcementMode != nil {
+				enforcementMode = string(*g.Properties.EnforcementMode)
+			}
+
+			scope := ""
+			if g.Properties != nil && g.Properties.Scope != nil {
+				scope = *g.Properties.Scope
+			}
+
 			resources = append(resources, &PolicyAssignment{
 				BaseResource: &BaseResource{
 					Region: ptr.String("global"),
 				},
 				client:          client,
-				Name:            *g.Name,
-				Scope:           *g.Scope,
-				EnforcementMode: string(g.EnforcementMode),
+				Name:            ptr.ToString(g.Name),
+				Scope:           scope,
+				EnforcementMode: enforcementMode,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 
