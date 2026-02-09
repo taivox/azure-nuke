@@ -47,8 +47,7 @@ func (r *ContainerRegistry) String() string {
 	return *r.Name
 }
 
-type ContainerRegistryLister struct {
-}
+type ContainerRegistryLister struct{}
 
 func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

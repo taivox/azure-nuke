@@ -130,8 +130,8 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.Properties.RoleName
 			}
 
-			var principalName = ptr.String("unknown")
-			var principalType = ptr.String("unknown")
+			principalName := ptr.String("unknown")
+			principalType := ptr.String("unknown")
 
 			if v, ok := l.principalNameCache[t.Properties.PrincipalID]; !ok {
 				u, _, err := userClient.Get(ctx, *t.Properties.PrincipalID, odata.Query{})

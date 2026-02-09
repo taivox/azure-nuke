@@ -57,8 +57,7 @@ func (r *RecoveryServicesBackupProtectionContainers) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupProtectionContainersLister struct {
-}
+type RecoveryServicesBackupProtectionContainersLister struct{}
 
 func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -75,23 +74,20 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 
 	log.Trace("creating client")
 
-	vaultsClient, err :=
-		armrecoveryservices.NewVaultsClient(
-			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	vaultsClient, err := armrecoveryservices.NewVaultsClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	client, err :=
-		armrecoveryservicesbackup.NewBackupProtectionContainersClient(
-			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	client, err := armrecoveryservicesbackup.NewBackupProtectionContainersClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	protectedContainers, err :=
-		armrecoveryservicesbackup.NewProtectionContainersClient(
-			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	protectedContainers, err := armrecoveryservicesbackup.NewProtectionContainersClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}

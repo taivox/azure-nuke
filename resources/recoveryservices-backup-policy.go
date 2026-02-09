@@ -63,8 +63,7 @@ func (r *RecoveryServicesBackupPolicy) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupPolicyLister struct {
-}
+type RecoveryServicesBackupPolicyLister struct{}
 
 func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -86,15 +85,13 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 	vaultsClient.Client.Authorizer = opts.Authorizers.Management
 
 	// TODO: pass in the endpoint
-	client :=
-		backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com")
+	client := backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com")
 	client.Client.Authorizer = opts.Authorizers.Management
 	client.Client.RetryAttempts = 1
 	client.Client.RetryDuration = time.Second * 2
 
 	// TODO: pass in the endpoint
-	protectionsClient :=
-		protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com")
+	protectionsClient := protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com")
 	protectionsClient.Client.Authorizer = opts.Authorizers.Management
 	protectionsClient.Client.RetryAttempts = 1
 	protectionsClient.Client.RetryDuration = time.Second * 2
@@ -103,9 +100,8 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 
 	log.Trace("listing resources")
 
-	vaultsRes, err :=
-		vaultsClient.ListByResourceGroupComplete(
-			ctx, commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup))
+	vaultsRes, err := vaultsClient.ListByResourceGroupComplete(
+		ctx, commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup))
 	if err != nil {
 		return nil, err
 	}

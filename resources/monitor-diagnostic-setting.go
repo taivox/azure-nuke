@@ -62,8 +62,7 @@ func (r *MonitorDiagnosticSetting) String() string {
 	return *r.Name
 }
 
-type MonitorDiagnosticSettingLister struct {
-}
+type MonitorDiagnosticSettingLister struct{}
 
 func (l MonitorDiagnosticSettingLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

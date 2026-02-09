@@ -50,8 +50,7 @@ func (r *PublicIPAddresses) String() string {
 	return *r.Name
 }
 
-type PublicIPAddressesLister struct {
-}
+type PublicIPAddressesLister struct{}
 
 func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

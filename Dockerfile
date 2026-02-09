@@ -15,7 +15,9 @@ RUN \
 FROM base AS goreleaser
 COPY azure-nuke /usr/local/bin/azure-nuke
 USER azure-nuke
+ENTRYPOINT ["/usr/local/bin/azure-nuke"]
 
 FROM base
 COPY --from=build /src/bin/azure-nuke /usr/local/bin/azure-nuke
 USER azure-nuke
+ENTRYPOINT ["/usr/local/bin/azure-nuke"]

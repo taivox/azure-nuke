@@ -57,8 +57,7 @@ func (r *RecoveryServicesBackupProtectionIntent) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupProtectionIntentLister struct {
-}
+type RecoveryServicesBackupProtectionIntentLister struct{}
 
 func (l RecoveryServicesBackupProtectionIntentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

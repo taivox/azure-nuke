@@ -58,8 +58,7 @@ func (r *RecoveryServicesVault) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesVaultLister struct {
-}
+type RecoveryServicesVaultLister struct{}
 
 func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

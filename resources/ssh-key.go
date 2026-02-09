@@ -49,8 +49,7 @@ func (r *SSHPublicKey) String() string {
 
 // --------------------------------------
 
-type SSHPublicKeyLister struct {
-}
+type SSHPublicKeyLister struct{}
 
 func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

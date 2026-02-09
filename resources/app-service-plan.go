@@ -26,8 +26,7 @@ func init() {
 	})
 }
 
-type AppServicePlanLister struct {
-}
+type AppServicePlanLister struct{}
 
 func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

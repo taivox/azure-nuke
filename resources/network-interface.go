@@ -28,8 +28,7 @@ func init() {
 	})
 }
 
-type NetworkInterfaceLister struct {
-}
+type NetworkInterfaceLister struct{}
 
 func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

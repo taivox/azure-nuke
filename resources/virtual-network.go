@@ -26,8 +26,7 @@ func init() {
 	})
 }
 
-type VirtualNetworkLister struct {
-}
+type VirtualNetworkLister struct{}
 
 func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

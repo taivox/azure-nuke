@@ -52,8 +52,7 @@ func (r *Disk) String() string {
 	return *r.Name
 }
 
-type DiskLister struct {
-}
+type DiskLister struct{}
 
 func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

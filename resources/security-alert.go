@@ -66,8 +66,7 @@ func (r *SecurityAlert) String() string {
 
 // ------------------------------------
 
-type SecurityAlertsLister struct {
-}
+type SecurityAlertsLister struct{}
 
 func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

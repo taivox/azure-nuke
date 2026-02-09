@@ -63,8 +63,7 @@ func (r *RecoveryServicesBackupProtectedItem) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupProtectedItemLister struct {
-}
+type RecoveryServicesBackupProtectedItemLister struct{}
 
 func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

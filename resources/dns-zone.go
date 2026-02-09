@@ -26,8 +26,7 @@ func init() {
 	})
 }
 
-type DNSZoneLister struct {
-}
+type DNSZoneLister struct{}
 
 func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

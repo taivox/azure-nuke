@@ -51,8 +51,7 @@ func (r *VirtualMachine) String() string {
 
 // -----------------------------------------
 
-type VirtualMachineLister struct {
-}
+type VirtualMachineLister struct{}
 
 func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

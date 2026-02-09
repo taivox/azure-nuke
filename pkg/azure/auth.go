@@ -15,7 +15,8 @@ import (
 
 func ConfigureAuth(
 	ctx context.Context,
-	environment, tenantID, clientID, clientSecret, clientCertFile, clientFedTokenFile string) (*Authorizers, error) {
+	environment, tenantID, clientID, clientSecret, clientCertFile, clientFedTokenFile string,
+) (*Authorizers, error) {
 	env, err := environments.FromName(environment)
 	if err != nil {
 		return nil, err

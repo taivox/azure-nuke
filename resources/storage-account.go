@@ -52,8 +52,7 @@ func (r *StorageAccount) String() string {
 
 // --------------------------------------
 
-type StorageAccountLister struct {
-}
+type StorageAccountLister struct{}
 
 func (l StorageAccountLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

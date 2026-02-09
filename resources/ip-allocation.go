@@ -26,8 +26,7 @@ func init() {
 	})
 }
 
-type IPAllocationLister struct {
-}
+type IPAllocationLister struct{}
 
 func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

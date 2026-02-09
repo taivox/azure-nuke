@@ -26,8 +26,7 @@ func init() {
 	})
 }
 
-type KeyVaultLister struct {
-}
+type KeyVaultLister struct{}
 
 func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

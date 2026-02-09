@@ -48,8 +48,7 @@ func (r *PrivateDNSZone) String() string {
 	return *r.Name
 }
 
-type PrivateDNSZoneLister struct {
-}
+type PrivateDNSZoneLister struct{}
 
 func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

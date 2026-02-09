@@ -58,8 +58,7 @@ func (r *SecurityAssessment) String() string {
 
 // -------------------------------------------------------------
 
-type SecurityAssessmentLister struct {
-}
+type SecurityAssessmentLister struct{}
 
 func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

@@ -52,8 +52,7 @@ func (r *ComputeSnapshot) String() string {
 	return *r.Name
 }
 
-type ComputeSnapshotLister struct {
-}
+type ComputeSnapshotLister struct{}
 
 func (l ComputeSnapshotLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

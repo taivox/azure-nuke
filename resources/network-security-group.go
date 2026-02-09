@@ -47,8 +47,7 @@ func (r *NetworkSecurityGroup) String() string {
 	return *r.Name
 }
 
-type NetworkSecurityGroupLister struct {
-}
+type NetworkSecurityGroupLister struct{}
 
 func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

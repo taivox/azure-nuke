@@ -58,8 +58,7 @@ func (r *ResourceGroup) String() string {
 
 // -------------------
 
-type ResourceGroupLister struct {
-}
+type ResourceGroupLister struct{}
 
 func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

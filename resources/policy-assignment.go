@@ -59,8 +59,7 @@ func (r *PolicyAssignment) String() string {
 	return r.Name
 }
 
-type PolicyAssignmentLister struct {
-}
+type PolicyAssignmentLister struct{}
 
 func (l PolicyAssignmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

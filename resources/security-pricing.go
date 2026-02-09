@@ -75,8 +75,7 @@ func (r *SecurityPricing) String() string {
 
 // -------------------------------------------------------------------
 
-type SecurityPricingLister struct {
-}
+type SecurityPricingLister struct{}
 
 func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

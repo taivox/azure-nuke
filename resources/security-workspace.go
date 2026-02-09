@@ -50,8 +50,7 @@ func (r *SecurityWorkspace) String() string {
 
 // -------------------------------------------------------------
 
-type SecurityWorkspaceLister struct {
-}
+type SecurityWorkspaceLister struct{}
 
 func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
