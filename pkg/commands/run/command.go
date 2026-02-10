@@ -53,6 +53,11 @@ func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocy
 
 	logger.Tracef("tenant id: %s", cmd.String("tenant-id"))
 
+	if cmd.String("client-id") == "" &&
+		(cmd.String("client-secret") != "" || cmd.String("client-certificate-file") != "" || cmd.String("client-federated-token-file") != "") {
+		return fmt.Errorf("--client-id is required when using --client-secret, --client-certificate-file, or --client-federated-token-file")
+	}
+
 	authorizers, err := azure.ConfigureAuth(ctx,
 		cmd.String("environment"), cmd.String("tenant-id"), cmd.String("client-id"),
 		cmd.String("client-secret"), cmd.String("client-certificate-file"),
@@ -316,10 +321,9 @@ func init() {
 			Required: false,
 		},
 		&cli.StringFlag{
-			Name:     "client-id",
-			Usage:    "the client-id to use for authentication",
-			Sources:  cli.EnvVars("AZURE_CLIENT_ID"),
-			Required: true,
+			Name:    "client-id",
+			Usage:   "the client-id to use for authentication (optional when using Azure CLI auth)",
+			Sources: cli.EnvVars("AZURE_CLIENT_ID"),
 		},
 		&cli.StringFlag{
 			Name:    "client-secret",

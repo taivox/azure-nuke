@@ -80,6 +80,17 @@ func ConfigureAuth(
 			return nil, err
 		}
 		authorizers.IdentityCreds = creds
+	} else {
+		logrus.Debug("authentication type: azure cli")
+		credentials.EnableAuthenticatingUsingAzureCLI = true
+
+		creds, err := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
+			TenantID: tenantID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		authorizers.IdentityCreds = creds
 	}
 
 	graphAuthorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, env.MicrosoftGraph)
