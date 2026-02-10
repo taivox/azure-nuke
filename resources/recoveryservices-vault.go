@@ -7,9 +7,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
-	"github.com/hashicorp/go-azure-sdk/sdk/environments"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -35,10 +33,9 @@ func init() {
 type RecoveryServicesVault struct {
 	*BaseResource `property:",inline"`
 
-	client  *vaults.VaultsClient
-	vaultID vaults.VaultId
-	ID      *string
-	Name    *string
+	client *armrecoveryservices.VaultsClient
+	ID     *string
+	Name   *string
 }
 
 func (r *RecoveryServicesVault) Filter() error {
@@ -46,7 +43,7 @@ func (r *RecoveryServicesVault) Filter() error {
 }
 
 func (r *RecoveryServicesVault) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.vaultID)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, nil)
 	return err
 }
 
@@ -73,33 +70,34 @@ func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([
 
 	log.Trace("creating client")
 
-	client, err := vaults.NewVaultsClientWithBaseURI(environments.AzurePublic().ResourceManager) // TODO: pass in the endpoint
+	client, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
-	client.Client.Authorizer = opts.Authorizers.Management
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("listing resources")
 
-	items, err := client.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup))
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	for _, item := range items.Items {
-		resources = append(resources, &RecoveryServicesVault{
-			BaseResource: &BaseResource{
-				Region:        ptr.String(item.Location),
-				ResourceGroup: ptr.String(opts.ResourceGroup),
-			},
-			client:  client,
-			vaultID: vaults.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(item.Id)),
-
-			ID:   item.Id,
-			Name: item.Name,
-		})
+		for _, item := range page.Value {
+			resources = append(resources, &RecoveryServicesVault{
+				BaseResource: &BaseResource{
+					Region:         item.Location,
+					ResourceGroup:  ptr.String(opts.ResourceGroup),
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				ID:     item.ID,
+				Name:   item.Name,
+			})
+		}
 	}
 
 	log.Trace("done")
