@@ -2,11 +2,10 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -33,42 +32,37 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 
 	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewVirtualNetworksClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armnetwork.NewVirtualNetworksClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list virtual networks")
 
-	list, err := client.List(ctx, opts.ResourceGroup)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	log.Trace("listing virtual networks")
-
-	for list.NotDone() {
-		for _, g := range list.Values() {
+		for _, entity := range page.Value {
 			resources = append(resources, &VirtualNetwork{
 				BaseResource: &BaseResource{
-					Region:         g.Location,
+					Region:         entity.Location,
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
 				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 
-	log.Trace("debug")
+	log.Trace("done")
 
 	return resources, nil
 }
@@ -78,13 +72,18 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 type VirtualNetwork struct {
 	*BaseResource `property:",inline"`
 
-	client network.VirtualNetworksClient
+	client *armnetwork.VirtualNetworksClient
 	Name   *string
 	Tags   map[string]*string
 }
 
 func (r *VirtualNetwork) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = poller.PollUntilDone(ctx, nil)
 	return err
 }
 

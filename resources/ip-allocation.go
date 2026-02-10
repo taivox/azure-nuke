@@ -2,11 +2,10 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -33,40 +32,33 @@ func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource
 
 	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewIPAllocationsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("attempting to list virtual networks")
-
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	client, err := armnetwork.NewIPAllocationsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Trace("listing resources")
+	resources := make([]resource.Resource, 0)
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+	log.Trace("attempting to list ip allocations")
+
+	pager := client.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, entity := range page.Value {
 			resources = append(resources, &IPAllocation{
 				BaseResource: &BaseResource{
-					Region:         g.Location,
+					Region:         entity.Location,
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
 				client: client,
-
-				Name: g.Name,
-				Tags: g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 
@@ -78,13 +70,18 @@ func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource
 type IPAllocation struct {
 	*BaseResource `property:",inline"`
 
-	client network.IPAllocationsClient
+	client *armnetwork.IPAllocationsClient
 	Name   *string
 	Tags   map[string]*string
 }
 
 func (r *IPAllocation) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = poller.PollUntilDone(ctx, nil)
 	return err
 }
 

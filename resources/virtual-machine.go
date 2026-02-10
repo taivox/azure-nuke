@@ -7,7 +7,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -30,14 +30,21 @@ func init() {
 type VirtualMachine struct {
 	*BaseResource `property:",inline"`
 
-	client       compute.VirtualMachinesClient
+	client       *armcompute.VirtualMachinesClient
 	Name         *string
 	Tags         map[string]*string
 	CreationDate *time.Time
 }
 
 func (r *VirtualMachine) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, &[]bool{true}[0])
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, &armcompute.VirtualMachinesClientBeginDeleteOptions{
+		ForceDeletion: ptr.Bool(true),
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = poller.PollUntilDone(ctx, nil)
 	return err
 }
 
@@ -58,53 +65,47 @@ func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resour
 
 	log := logrus.WithField("r", VirtualMachineResource).WithField("s", opts.SubscriptionID)
 
-	client := compute.NewVirtualMachinesClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armcompute.NewVirtualMachinesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list virtual machines")
 
-	list, err := client.List(ctx, opts.ResourceGroup)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	log.Trace("listing resources")
-
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
-			instanceView, err := client.InstanceView(ctx, opts.ResourceGroup, *g.Name)
+		for _, entity := range page.Value {
+			instanceView, err := client.InstanceView(ctx, opts.ResourceGroup, *entity.Name, nil)
 			if err != nil {
 				return nil, err
 			}
 
 			var creationDate *time.Time
-			for _, status := range *instanceView.Statuses {
+			for _, status := range instanceView.Statuses {
 				if status.Code != nil && *status.Code == "ProvisioningState/succeeded" {
-					creationDate = ptr.Time(status.Time.Time)
+					creationDate = status.Time
 					break
 				}
 			}
 
 			resources = append(resources, &VirtualMachine{
 				BaseResource: &BaseResource{
-					Region:         g.Location,
+					Region:         entity.Location,
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
 				client:       client,
-				Name:         g.Name,
-				Tags:         g.Tags,
+				Name:         entity.Name,
+				Tags:         entity.Tags,
 				CreationDate: creationDate,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

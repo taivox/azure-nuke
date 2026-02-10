@@ -4,10 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -33,14 +32,19 @@ func init() {
 type ComputeSnapshot struct {
 	*BaseResource `property:",inline"`
 
-	client       compute.SnapshotsClient
+	client       *armcompute.SnapshotsClient
 	Name         *string
 	Tags         map[string]*string
 	CreationDate *time.Time
 }
 
 func (r *ComputeSnapshot) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = poller.PollUntilDone(ctx, nil)
 	return err
 }
 
@@ -59,40 +63,39 @@ func (l ComputeSnapshotLister) List(ctx context.Context, o interface{}) ([]resou
 
 	log := logrus.WithField("r", ComputeSnapshotResource).WithField("s", opts.SubscriptionID)
 
-	client := compute.NewSnapshotsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("attempting to list disks")
-
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	client, err := armcompute.NewSnapshotsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Trace("listing ....")
+	resources := make([]resource.Resource, 0)
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, r := range list.Values() {
+	log.Trace("attempting to list snapshots")
+
+	pager := client.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, entity := range page.Value {
+			var creationDate *time.Time
+			if entity.Properties != nil {
+				creationDate = entity.Properties.TimeCreated
+			}
+
 			resources = append(resources, &ComputeSnapshot{
 				BaseResource: &BaseResource{
-					Region:         r.Location,
+					Region:         entity.Location,
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
 				client:       client,
-				Name:         r.Name,
-				Tags:         r.Tags,
-				CreationDate: ptr.Time(r.TimeCreated.Time),
+				Name:         entity.Name,
+				Tags:         entity.Tags,
+				CreationDate: creationDate,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 
